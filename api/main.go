@@ -11,9 +11,9 @@ import (
 func main() {
 	config.LoadEnvironment()
 
-	fmt.Println("Server Running!!")
-
 	router := router.Generate()
+
+	fmt.Printf("Server running on port: %d", config.Port)
 
 	log.Fatal(http.ListenAndServe(fmt.Sprintf(":%d", config.Port), router))
 }
