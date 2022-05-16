@@ -77,3 +77,36 @@ func (repository users) GetAllUsers(query string) ([]models.User, error) {
 
 	return users, nil
 }
+
+func (repository users) GetUserById(id uint64) (models.User, error) {
+	rows, err := repository.db.Query(
+		"select id, name, email, nick, created_at, updated_at FROM users WHERE id = ?",
+		id,
+	)
+
+	if err != nil {
+		return models.User{}, err
+	}
+
+	defer rows.Close()
+
+	var user models.User
+
+	if rows.Next() {
+
+		if err = rows.Scan(
+			&user.ID,
+			&user.Name,
+			&user.Email,
+			&user.Nick,
+			&user.CreatedAt,
+			&user.UpdatedAt,
+		); err != nil {
+			return models.User{}, err
+		}
+
+	}
+
+	return user, err
+
+}
