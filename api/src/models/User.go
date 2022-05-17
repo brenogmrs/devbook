@@ -17,8 +17,8 @@ type User struct {
 	UpdatedAt time.Time `json:"updated_at,omitempty"`
 }
 
-func (user *User) Prepare() error {
-	if err := user.validateFields(); err != nil {
+func (user *User) Prepare(method string) error {
+	if err := user.validateFields(method); err != nil {
 		return err
 	}
 
@@ -26,7 +26,7 @@ func (user *User) Prepare() error {
 	return nil
 }
 
-func (user *User) validateFields() error {
+func (user *User) validateFields(method string) error {
 	if user.Name == "" {
 		return errors.New("field `name` is required")
 	}
@@ -36,7 +36,7 @@ func (user *User) validateFields() error {
 	if user.Nick == "" {
 		return errors.New("field `nick` is required")
 	}
-	if user.Password == "" {
+	if method == "create" && user.Password == "" {
 		return errors.New("field `password` is required")
 	}
 
