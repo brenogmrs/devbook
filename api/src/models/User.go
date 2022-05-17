@@ -4,6 +4,8 @@ import (
 	"errors"
 	"strings"
 	"time"
+
+	"github.com/badoux/checkmail"
 )
 
 // User model
@@ -30,12 +32,19 @@ func (user *User) validateFields(method string) error {
 	if user.Name == "" {
 		return errors.New("field `name` is required")
 	}
+
 	if user.Email == "" {
 		return errors.New("field `email` is required")
 	}
+
+	if err := checkmail.ValidateFormat(user.Email); err != nil {
+		return errors.New("invalid email format")
+	}
+
 	if user.Nick == "" {
 		return errors.New("field `nick` is required")
 	}
+
 	if method == "create" && user.Password == "" {
 		return errors.New("field `password` is required")
 	}
