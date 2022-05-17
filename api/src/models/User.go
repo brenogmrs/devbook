@@ -1,6 +1,7 @@
 package models
 
 import (
+	"api/src/helpers"
 	"errors"
 	"strings"
 	"time"
@@ -24,7 +25,10 @@ func (user *User) Prepare(method string) error {
 		return err
 	}
 
-	user.formatData()
+	if err := user.formatData(method); err != nil {
+		return err
+	}
+
 	return nil
 }
 
@@ -52,8 +56,20 @@ func (user *User) validateFields(method string) error {
 	return nil
 }
 
-func (user *User) formatData() {
+func (user *User) formatData(method string) error {
 	user.Name = strings.TrimSpace(user.Name)
 	user.Nick = strings.TrimSpace(user.Nick)
 	user.Email = strings.TrimSpace(user.Email)
+
+	if method == "create" {
+		hashedPassword, err := helpers.Hash(user.Password)
+
+		if err != nil {
+			return err
+		}
+
+		user.Password = string(hashedPassword)
+	}
+
+	return nil
 }
