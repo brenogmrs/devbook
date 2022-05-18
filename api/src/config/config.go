@@ -12,6 +12,7 @@ import (
 var (
 	ConnectionString = ""
 	Port             = 0
+	SecretKey        []byte
 )
 
 func LoadEnvironment() {
@@ -32,4 +33,6 @@ func LoadEnvironment() {
 		os.Getenv("DB_PASSWORD"),
 		os.Getenv("DB_NAME"),
 	)
+
+	SecretKey = []byte(os.Getenv("JWT_SECRET_KEY"))
 }
