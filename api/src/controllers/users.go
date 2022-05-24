@@ -3,6 +3,7 @@ package controllers
 import (
 	"api/src/auth"
 	"api/src/database"
+	"api/src/helpers"
 	"api/src/models"
 	"api/src/repositories"
 	"api/src/responses"
@@ -128,7 +129,7 @@ func UpdateUser(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if userID != tokenUserID {
-		responses.Error(w, http.StatusForbidden, errors.New("you cannot update a users that is not yours"))
+		responses.Error(w, http.StatusForbidden, errors.New("you cannot update a user that is not yours"))
 		return
 	}
 
@@ -338,4 +339,76 @@ func GetUserFollows(w http.ResponseWriter, r *http.Request) {
 
 	responses.JSON(w, http.StatusOK, follows)
 
+}
+
+func ChangePassword(w http.ResponseWriter, r *http.Request) {
+
+	tokenUserID, err := auth.ExtractUserID(r)
+	if err != nil {
+		responses.Error(w, http.StatusUnauthorized, err)
+		return
+	}
+
+	params := mux.Vars(r)
+
+	userID, err := strconv.ParseUint(params["userID"], 10, 64)
+	if err != nil {
+		responses.Error(w, http.StatusBadRequest, err)
+		return
+	}
+
+	if tokenUserID != userID {
+		responses.Error(
+			w,
+			http.StatusForbidden,
+			errors.New("its not possible to update a password thats not yours"),
+		)
+		return
+	}
+
+	body, err := ioutil.ReadAll(r.Body)
+	if err != nil {
+		responses.JSON(w, http.StatusUnprocessableEntity, err)
+		return
+	}
+
+	var changePassword models.ChangePassword
+	if err = json.Unmarshal(body, &changePassword); err != nil {
+		responses.Error(w, http.StatusBadRequest, err)
+		return
+	}
+
+	db, err := database.Connect()
+	if err != nil {
+		responses.Error(w, http.StatusInternalServerError, err)
+		return
+	}
+	defer db.Close()
+
+	repository := repositories.NewUserRepository(db)
+	foundPassword, err := repository.GetPassword(userID)
+
+	if err != nil {
+		responses.Error(w, http.StatusInternalServerError, err)
+		return
+	}
+
+	if err = helpers.VerifyPassword(foundPassword, changePassword.CurrentPassword); err != nil {
+		responses.Error(w, http.StatusUnauthorized, errors.New("wrong current password"))
+		return
+	}
+
+	hashedPassword, err := helpers.Hash(changePassword.NewPassword)
+
+	if err != nil {
+		responses.Error(w, http.StatusBadRequest, err)
+		return
+	}
+
+	if err = repository.ChangePassword(userID, string(hashedPassword)); err != nil {
+		responses.Error(w, http.StatusInternalServerError, err)
+		return
+	}
+
+	responses.JSON(w, http.StatusNoContent, nil)
 }
