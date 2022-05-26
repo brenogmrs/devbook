@@ -13,7 +13,7 @@ var postsRoutes = []Route{
 		RequireAuth: true,
 	},
 	{
-		URI:         "/post/{postID}",
+		URI:         "/post",
 		Method:      http.MethodGet,
 		Function:    controllers.GetAllPosts,
 		RequireAuth: true,
