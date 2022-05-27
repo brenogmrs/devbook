@@ -154,7 +154,9 @@ func (repository Posts) Delete(postID uint64) error {
 
 func (repository Posts) GetUserPosts(userID uint64) ([]models.Post, error) {
 	rows, err := repository.db.Query(`
-		select p.* from posts where author_id = ?
+		select p.*, u.nick from posts p 
+		join users u on u.id = post.author_id
+		where p.author_id = ?
 	`, userID)
 
 	if err != nil {
@@ -177,6 +179,7 @@ func (repository Posts) GetUserPosts(userID uint64) ([]models.Post, error) {
 			&post.Likes,
 			&post.CreatedAt,
 			&post.UpdatedAt,
+			&post.AuthourNick,
 		); err != nil {
 			return []models.Post{}, err
 		}
