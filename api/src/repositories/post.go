@@ -210,7 +210,10 @@ func (repository Posts) LikePost(postID uint64) error {
 
 func (repository Posts) UnlikePost(postID uint64) error {
 	statement, err := repository.db.Prepare(
-		"update posts set likes = likes - 1 where id = ?",
+		`update posts set likes = 
+		CASE WHEN likes > 0 THEN likes - 1
+		ELSE 0 END
+		where id = ?`,
 	)
 
 	if err != nil {
