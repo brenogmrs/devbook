@@ -7,6 +7,7 @@ import (
 	"api/src/repositories"
 	"api/src/responses"
 	"encoding/json"
+	"errors"
 	"io/ioutil"
 	"net/http"
 	"strconv"
@@ -113,6 +114,64 @@ func GetPostById(w http.ResponseWriter, r *http.Request) {
 }
 
 func UpdatePost(w http.ResponseWriter, r *http.Request) {
+
+	params := mux.Vars(r)
+	postID, err := strconv.ParseUint(params["postID"], 10, 64)
+
+	if err != nil {
+		responses.Error(w, http.StatusBadRequest, err)
+		return
+	}
+
+	db, err := database.Connect()
+	if err != nil {
+		responses.Error(w, http.StatusInternalServerError, err)
+		return
+	}
+	defer db.Close()
+
+	repository := repositories.NewPostRepository(db)
+	post, err := repository.GetById(postID)
+
+	if err != nil {
+		responses.Error(w, http.StatusInternalServerError, err)
+		return
+	}
+
+	tokenUserID, err := auth.ExtractUserID(r)
+	if err != nil {
+		responses.Error(w, http.StatusUnauthorized, err)
+		return
+	}
+
+	if post.AuthourID != tokenUserID {
+		responses.Error(w, http.StatusUnauthorized, errors.New("you cannot update a post that is not yours"))
+		return
+	}
+
+	body, err := ioutil.ReadAll(r.Body)
+	if err != nil {
+		responses.Error(w, http.StatusUnprocessableEntity, err)
+		return
+	}
+
+	var postUpdate models.Post
+	if err = json.Unmarshal(body, &postUpdate); err != nil {
+		responses.Error(w, http.StatusBadRequest, err)
+		return
+	}
+
+	if err = postUpdate.Prepare(); err != nil {
+		responses.Error(w, http.StatusBadRequest, err)
+		return
+	}
+
+	if err = repository.Update(postID, postUpdate); err != nil {
+		responses.Error(w, http.StatusInternalServerError, err)
+		return
+	}
+
+	responses.JSON(w, http.StatusNoContent, nil)
 
 }
 
